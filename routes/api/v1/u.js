@@ -47,7 +47,7 @@ router.get("/:uin",async ctx=>{
         ctx.body = {
             result: 200,
             uin:res.uin,
-            nickname:Crypto.toString(res.name),
+            nickname:Crypto.toString(res.nickname),
             email:res.email,
             timestamp:res.timestamp,
         };
