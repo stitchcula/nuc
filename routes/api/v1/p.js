@@ -10,68 +10,6 @@ const body = require('koa-json-body');
 
 const router=new Router();
 
-router.post("/",body({ limit: '10kb'}),async ctx=>{
-    vld.chk(ctx.request.body["name"]).notnull().string().least(3).most(16);
-    vld.chk(ctx.request.body["secret"]).notnull().string();
-    vld.chk(ctx.request.body["description"]).string();
-
-    const bean={
-        uin:Crypto.createUin(),
-        name:Crypto.toBase64(ctx.request.body["name"]),
-        secret:ctx.request.body["secret"],
-        description:Crypto.toBase64(ctx.request.body["description"]),
-        timestamp:new Date().getTime(),
-        owner:"000000000000000000000000"
-    };
-
-    await ctx.mongo.collection("p")
-        .insertOne(bean);
-
-    ctx.body={result:200,uin:bean.uin}
-});
-
-router.get("/:uin",async ctx=>{
-    const res=await ctx.mongo.collection("p")
-        .findOne({uin:ctx.params["uin"]});
-
-    if(res) {
-        ctx.body = {
-            result: 200,
-            uin:res.uin,
-            name:Crypto.toString(res.name),
-            description:Crypto.toString(res.description),
-            timestamp:res.timestamp,
-            owner:res.owner
-        };
-    }else
-        ctx.body={result:404};
-});
-
-router.put("/:uin",body({ limit: '10kb'}),async ctx=>{
-    vld.chk(ctx.request.body["name"]).notnull().string().least(3).most(16);
-    vld.chk(ctx.request.body["secret"]).notnull().string();
-    vld.chk(ctx.request.body["description"]).string();
-
-    const bean={
-        name:Crypto.toBase64(ctx.request.body["name"]),
-        secret:ctx.request.body["secret"],
-        description:Crypto.toBase64(ctx.request.body["description"])
-    };
-
-    const res=await ctx.mongo.collection("p")
-        .updateOne({uin:ctx.params["uin"]},{"$set":bean},{upsert:true});
-
-    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
-});
-
-router.del("/:uin",async ctx=>{
-    const res=await ctx.mongo.collection("p")
-        .deleteOne({uin:ctx.params["uin"]});
-    //todo:删除app名下所有user和role
-
-    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
-});
-
 router.post("/:uin/role",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["role"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["parent"]).string().least(24).most(24);
