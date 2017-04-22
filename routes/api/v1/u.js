@@ -26,6 +26,16 @@ router.post("/",body({ limit: '10kb'}),async ctx=>{
     await ctx.mongo.collection("u")
         .insertOne(bean);
 
+    const auth={
+        user:bean.uin,
+        app:"000000000000000000000000",
+        role:"000000000000000000000000",
+        timestamp:new Date().getTime()
+    };
+
+    await ctx.mongo.collection("u_auth")
+        .insertOne(auth);
+
     ctx.body={result:200,uin:bean.uin}
 });
 
@@ -70,29 +80,27 @@ router.del("/:uin",async ctx=>{
     ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
 });
 
-
-
 router.post("/:uin/auth/:app",async ctx=>{
     if(!await ctx.mongo.collection("p")
         .findOne({uin:ctx.params["app"]}))
         throw "不存在的应用";
 
     const bean={
-        uin:ctx.params["uin"],
+        user:ctx.params["uin"],
         app:ctx.params["app"],
         role:"000000000000000000000000",
         timestamp:new Date().getTime()
     };
 
-    await ctx.mongo.collection("u_role")
+    await ctx.mongo.collection("u_auth")
         .insertOne(bean);
 
     ctx.body={result:200}
 });
 
 router.del("/:uin/auth/:app",async ctx=>{
-    const res=await ctx.mongo.collection("u_role")
-        .deleteOne({uin:ctx.params["uin"],app:ctx.params["app"]});
+    const res=await ctx.mongo.collection("u_auth")
+        .deleteOne({user:ctx.params["uin"],app:ctx.params["app"]});
 
     ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
 });

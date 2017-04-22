@@ -218,7 +218,50 @@ router.del("/:uin/role/:role/rule/:rule",async ctx=>{
 });
 
 router.get("/:uin/user",async ctx=>{
-    //todo:获取用户列表信息
+    //todo:获取app名下用户信息(含role)列表
+    ctx.query["per"]=ctx.query["per"]||10;
+    ctx.query["page"]=ctx.query["page"]||10;
+
+});
+
+router.get("/:uin/user/:user",async ctx=>{
+    //todo:获取app名下用户信息(含role)
+    const auth=await ctx.mongo.collection("u_auth")
+        .findOne({user:ctx.params["user"],app:ctx.params["uin"]})
+    if(!auth)
+        throw "无权访问该用户信息";
+
+    const user=await ctx.mongo.collection("u")
+        .findOne({uin:ctx.params["user"]});
+    user.role=auth.role;
+
+    ctx.body={result:200,user};
+});
+
+router.post("/:uin/user/:user",async ctx=>{
+    //todo:新增app名下用户信息，将会重定向到OAuth界面
+    throw "请勿使用该接口";
+});
+
+router.del("/:uin/user/:user",async ctx=>{
+    //todo:取消user对app的授权
+    const res=await ctx.mongo.collection("u_auth")
+        .deleteOne({user:ctx.params["user"],app:ctx.params["uin"]});
+
+    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
+});
+
+router.put("/:uin/user/:user/role/:role",async ctx=>{
+    //todo:修改user的role
+    const res=await ctx.mongo.collection("u_auth")
+        .updateOne({user:ctx.params["user"],app:ctx.params["uin"]},
+            {"$set":{role:ctx.params["role"]}},{upsert:true});
+
+    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
+});
+
+router.get("/:uin/user/:user/access/:access",async ctx=>{
+    //todo:是否有访问权限
 });
 
 module.exports = router;
