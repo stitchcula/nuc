@@ -10,6 +10,31 @@ const body = require('koa-json-body');
 
 const router=new Router();
 
+router.put("/",body({ limit: '10kb'}),async ctx=>{
+    vld.chk(ctx.request.body["username"]).notnull().string();
+    vld.chk(ctx.request.body["password"]).notnull().string();
+
+    const bean={
+        password:ctx.request.body["password"]
+    };
+    if(/@/.test(ctx.request.body["username"]))
+        bean.email=ctx.request.body["username"];
+    else
+        bean.nickname=ctx.request.body["username"];
+
+    const user=await ctx.mongo.collection("u")
+        .findOne(bean,{_id:0,password:0});
+    if(!user)
+        throw "账户或密码错误。";
+
+    user.roles=await ctx.mongo.collection("u_auth")
+        .find({user:user.uin}).project({_id:0,user:0}).toArray();
+    user.timestamp=new Date().getTime();
+    user.token=Crypto.sha256(user.timestamp+user.uin+"nicaiya");
+
+    ctx.body={result:200,user};
+});
+
 router.post("/",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["email"]).notnull().string();

@@ -3,8 +3,10 @@ const Router=require('koa-router');
 
 const router=new Router();
 
-router.get("/test",async ctx=>{
-    ctx.body="hello user";
+
+router.all(/.*/,async (ctx,next)=>{
+    console.log("hello user");
+    await next;
 });
 
 module.exports = router;
