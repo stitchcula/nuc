@@ -22,7 +22,7 @@ app.context.redis=new Redis({
 
 app.use(require("koa-response-time")());
 app.use(CORS.allow("http://localhost:8080"));
-app.use(session({key:'Authorization'}));
+app.use(session({key:'token'}));
 
 app.use(async (ctx,next) => {
     console.log(`[${new Date()}] ${ctx.ip} : ${ctx.method} ${ctx.path}${ctx.querystring?("?"+ctx.querystring):""}`);
