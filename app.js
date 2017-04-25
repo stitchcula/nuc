@@ -1,8 +1,7 @@
 "use strict";
 
 const Koa=require('koa');
-const session = require('koa-session2');
-const Store = require('./lib/util/Store.js');
+const session = require('./lib/util/Session.js');
 const Loader = require('./lib/util/RoutesLoader.js');
 const CORS = require('./lib/util/CORS.js');
 //const Redis = require("ioredis");
@@ -23,6 +22,7 @@ app.context.redis=new Redis({
 
 app.use(require("koa-response-time")());
 app.use(CORS.allow("http://localhost:8080"));
+app.use(session({key:'Authorization'}));
 
 app.use(async (ctx,next) => {
     console.log(`[${new Date()}] ${ctx.ip} : ${ctx.method} ${ctx.path}${ctx.querystring?("?"+ctx.querystring):""}`);
@@ -35,7 +35,6 @@ app.use(async (ctx,next) => {
     await ctx.mongo.close();
 });
 
-app.use(session({key:'Authorization'}));
 app.use(router.routes());
 app.use(router.allowedMethods());
 
