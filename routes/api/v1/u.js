@@ -49,6 +49,7 @@ router.put("/",body({ limit: '10kb'}),async ctx=>{
         .find({user:user.uin}).project({_id:0,user:0}).toArray();
 
     ctx.session={uin:user.uin,UniquenessCheck:user.UniquenessCheck};
+    delete user.UniquenessCheck;
 
     ctx.body={result:200,user};
 });

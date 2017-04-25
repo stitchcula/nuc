@@ -27,18 +27,15 @@ app.use(CORS.allow("http://localhost:8080"));
 app.use(async (ctx,next) => {
     console.log(`[${new Date()}] ${ctx.ip} : ${ctx.method} ${ctx.path}${ctx.querystring?("?"+ctx.querystring):""}`);
     ctx.mongo=await MongoClient.connect(MONGO_URL);
-    ctx.cookies.set('token',ctx.get('Authorization'));
     try {
         await next();
     }catch (e){
         ctx.body={result:403,error:e};
     }
-    ctx.set('Authorization',ctx.cookies.get('token'));
     await ctx.mongo.close();
 });
 
-//app.use(jwt({ secret: 'cute-toy',passthrough: true}));
-app.use(session({store:new Store(),key:'token'}));
+app.use(session({key:'Authorization'}));
 app.use(router.routes());
 app.use(router.allowedMethods());
 
