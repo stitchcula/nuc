@@ -54,6 +54,14 @@ router.put("/",body({ limit: '10kb'}),async ctx=>{
     ctx.body={result:200,user};
 });
 
+router.del("/",async ctx=>{
+    const res=await ctx.mongo.collection("u")
+        .updateOne({uin:ctx.session.uin},{"$set":{UniquenessCheck:""}},{upsert:true});
+    ctx.session=null;
+
+    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:500};
+});
+
 router.post("/",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["email"]).notnull().string();
