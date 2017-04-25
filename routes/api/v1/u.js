@@ -38,7 +38,7 @@ router.put("/",body({ limit: '10kb'}),async ctx=>{
     //非关键字段
     user.LastLoginTime=new Date().getTime();
     user.LastLoginIp=ctx.ip;
-    user.UniquenessCheck=Crypto.sha256(user.timestamp+user.uin+"nicaiya");
+    user.UniquenessCheck=Crypto.sha256(user.LastLoginTime+user.uin+"nicaiya");
 
     const res=await ctx.mongo.collection("u")
         .updateOne(bean,{"$set":user},{upsert:true});
