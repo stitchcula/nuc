@@ -10,12 +10,28 @@ const body = require('koa-json-body');
 
 const router=new Router();
 
-router.head("/",async ctx=>{
-    if(ctx.session&&ctx.session.uin&&ctx.session.UniquenessCheck&&await ctx.mongo.collection("u")
-        .findOne(ctx.session,{_id:0,password:0}))
-        return ctx.status=204;
+router.head("/",async ctx=> {
+    if (ctx.session && ctx.session.uin && ctx.session.UniquenessCheck && await ctx.mongo.collection("u")
+            .findOne(ctx.session, {_id: 0, password: 0}))
+        return ctx.status = 204;
     else
+        return ctx.status = 401;
+});
+
+router.get("/",async ctx=>{
+    if(!ctx.session||!ctx.session.uin||!ctx.session.UniquenessCheck)
         return ctx.status=401;
+
+    const user=await ctx.mongo.collection("u")
+        .findOne(ctx.session,{_id:0,password:0});
+    if(!user)
+        throw "哇，居然找不到。";
+
+    user.roles=await ctx.mongo.collection("u_auth")
+        .find({user:user.uin}).project({_id:0,user:0}).toArray();
+    delete user.UniquenessCheck;
+
+    ctx.body={result:200,data:user};
 });
 
 router.put("/",body({ limit: '10kb'}),async ctx=>{
@@ -45,13 +61,10 @@ router.put("/",body({ limit: '10kb'}),async ctx=>{
     if(res.result.n!==1||res.result.ok!==1)
         throw {code:500,msg:"数据库错误"};
 
-    user.roles=await ctx.mongo.collection("u_auth")
-        .find({user:user.uin}).project({_id:0,user:0}).toArray();
-
     ctx.session={uin:user.uin,UniquenessCheck:user.UniquenessCheck};
     delete user.UniquenessCheck;
 
-    ctx.body={result:200,user};
+    ctx.body={result:200,data:user};
 });
 
 router.del("/",async ctx=>{
