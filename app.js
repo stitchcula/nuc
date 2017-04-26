@@ -36,7 +36,6 @@ app.use(async (ctx,next) => {
     }
 });
 
-app.use(auth);
 app.use(router.routes());
 app.use(router.allowedMethods());
 
