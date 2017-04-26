@@ -4,7 +4,7 @@
 
 "use strict";
 const Router=require('koa-router');
-const userAuth=require('../../../lib/middleware/auth/User.js')
+const userAuth=require('../../../lib/middleware/auth/User.js');
 const Crypto=require('../../../lib/util/Crypto.js');
 const vld=require('../../../lib/util/Validator.js');
 const body = require('koa-json-body');
@@ -12,6 +12,13 @@ const body = require('koa-json-body');
 const router=new Router();
 
 router.use(userAuth);
+
+router.head(/.*/,async ctx=>{
+    if(ctx.state.type===TYPE_USER)
+        return ctx.status = 204;
+    else
+        return ctx.status = 401;
+});
 
 router.put("/",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["username"]).notnull().string();

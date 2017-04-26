@@ -4,7 +4,6 @@ const Koa=require('koa');
 const session = require('./lib/util/Session.js');
 const Loader = require('./lib/util/RoutesLoader.js');
 const CORS = require('./lib/util/CORS.js');
-const auth = require('./lib/middleware/auth');
 //const Redis = require("ioredis");
 const MongoClient = require('mongodb').MongoClient;
 const MONGO_URL=`mongodb://${process.env["MONGO_HOST"]}:${process.env["MONGO_PORT"]}/nuc`;
