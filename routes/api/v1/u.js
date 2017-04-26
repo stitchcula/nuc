@@ -114,24 +114,31 @@ router.put("/:uin",body({ limit: '10kb'}),async ctx=>{
             return ctx.body={result:404};
     }
 
-    vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
-    vld.chk(ctx.request.body["email"]).notnull().string();
-    vld.chk(ctx.request.body["password"]).notnull().string();
+    if(!ctx.request.body["password"]) {
+        vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
+        vld.chk(ctx.request.body["email"]).notnull().string();
 
-    if(await ctx.mongo.collection("u")
-            .findOne({"$or":[{email:ctx.query["email"]},{nickname:ctx.query["nickname"]}]}))
-        return ctx.body={result:595};
+        if (await ctx.mongo.collection("u")
+                .findOne({"$or": [{email: ctx.query["email"]}, {nickname: ctx.query["nickname"]}]}))
+            return ctx.body = {result: 595};
 
-    const bean={
-        nickname:ctx.request.body["nickname"],
-        email:ctx.request.body["email"],
-        password:ctx.request.body["password"]
-    };
+        const bean = {
+            nickname: ctx.request.body["nickname"],
+            email: ctx.request.body["email"]
+        };
 
-    const res=await ctx.mongo.collection("u")
-        .updateOne({uin:ctx.params["uin"]},{"$set":bean},{upsert:true});
+        const res = await ctx.mongo.collection("u")
+            .updateOne({uin: ctx.params["uin"]}, {"$set": bean}, {upsert: true});
 
-    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
+        ctx.body = {result: (res.result.n === 1 && res.result.ok === 1) ? 200 : 404};
+    }else{
+        vld.chk(ctx.request.body["new_password"]).notnull().string();
+
+        const res = await ctx.mongo.collection("u")
+            .updateOne({uin: ctx.params["uin"],password: ctx.request.body["password"]},
+                {"$set": {password: ctx.request.body["new_password"]}}, {upsert: true});
+        ctx.body = {result: (res.result.n === 1 && res.result.ok === 1) ? 200 : 404};
+    }
 });
 
 router.del("/:uin",async ctx=>{
