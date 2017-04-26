@@ -78,7 +78,7 @@ router.get("/:uin/role/:role/rule",async ctx=>{
     let role=ctx.params["role"],tmp;
     while (true) {
         tmp=await ctx.mongo.collection("m_rule")
-            .find({owner:role}, {fields: {_id: -1}}).toArray();
+            .find({owner:role}).project({_id:0}).toArray();
         rules.push(...tmp);
         tmp=await ctx.mongo.collection("m")
             .findOne({owner:ctx.params["uin"],uin:ctx.params["role"]});

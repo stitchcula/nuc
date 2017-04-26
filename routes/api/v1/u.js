@@ -10,30 +10,6 @@ const body = require('koa-json-body');
 
 const router=new Router();
 
-router.head("/",async ctx=> {
-    if (ctx.session && ctx.session.uin && ctx.session.UniquenessCheck && await ctx.mongo.collection("u")
-            .findOne(ctx.session, {_id: 0, password: 0}))
-        return ctx.status = 204;
-    else
-        return ctx.status = 401;
-});
-
-router.get("/",async ctx=>{
-    if(!ctx.session||!ctx.session.uin||!ctx.session.UniquenessCheck)
-        return ctx.status=401;
-
-    const user=await ctx.mongo.collection("u")
-        .findOne(ctx.session,{_id:0,password:0});
-    if(!user)
-        throw "哇，居然找不到。";
-
-    user.roles=await ctx.mongo.collection("u_auth")
-        .find({user:user.uin}).project({_id:0,user:0}).toArray();
-    delete user.UniquenessCheck;
-
-    ctx.body={result:200,data:user};
-});
-
 router.put("/",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["username"]).notnull().string();
     vld.chk(ctx.request.body["password"]).notnull().string();
@@ -62,17 +38,8 @@ router.put("/",body({ limit: '10kb'}),async ctx=>{
         throw {code:500,msg:"数据库错误"};
 
     ctx.session={uin:user.uin,UniquenessCheck:user.UniquenessCheck};
-    delete user.UniquenessCheck;
 
-    ctx.body={result:200,data:user};
-});
-
-router.del("/",async ctx=>{
-    const res=await ctx.mongo.collection("u")
-        .updateOne({uin:ctx.session.uin},{"$set":{UniquenessCheck:""}},{upsert:true});
-    ctx.session=null;
-
-    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:500};
+    ctx.body={result:200,uin:user.uin};
 });
 
 router.post("/",body({ limit: '10kb'}),async ctx=>{
@@ -82,7 +49,7 @@ router.post("/",body({ limit: '10kb'}),async ctx=>{
 
     const bean={
         uin:Crypto.createUin(),
-        nickname:Crypto.toBase64(ctx.request.body["nickname"]),
+        nickname:ctx.request.body["nickname"],
         email:ctx.request.body["email"],
         password:ctx.request.body["password"],
         timestamp:new Date().getTime()
@@ -104,20 +71,21 @@ router.post("/",body({ limit: '10kb'}),async ctx=>{
     ctx.body={result:200,uin:bean.uin}
 });
 
-router.get("/:uin",async ctx=>{
+router.del("/",async ctx=>{
     const res=await ctx.mongo.collection("u")
-        .findOne({uin:ctx.params["uin"]});
+        .updateOne({uin:ctx.state.user.uin},{"$set":{UniquenessCheck:""}},{upsert:true});
+    ctx.session={};
 
-    if(res) {
-        ctx.body = {
-            result: 200,
-            uin:res.uin,
-            nickname:Crypto.toString(res.nickname),
-            email:res.email,
-            timestamp:res.timestamp,
-        };
-    }else
-        ctx.body={result:404};
+    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:500};
+});
+
+router.get("/:uin",async ctx=>{
+    const user=ctx.state.user;
+    user.roles=await ctx.mongo.collection("u_auth")
+        .find({user:user.uin}).project({_id:0,user:0}).toArray();
+    delete user.UniquenessCheck;
+
+    ctx.body={result:200,data:user};
 });
 
 router.put("/:uin",body({ limit: '10kb'}),async ctx=>{
@@ -126,7 +94,7 @@ router.put("/:uin",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["password"]).notnull().string();
 
     const bean={
-        nickname:Crypto.toBase64(ctx.request.body["nickname"]),
+        nickname:ctx.request.body["nickname"],
         email:ctx.request.body["email"],
         password:ctx.request.body["password"]
     };
@@ -152,9 +120,9 @@ router.post("/:uin/app",body({ limit: '10kb'}),async ctx=>{
 
     const bean={
         uin:Crypto.createUin(),
-        name:Crypto.toBase64(ctx.request.body["name"]),
+        name:ctx.request.body["name"],
         secret:ctx.request.body["secret"],
-        description:Crypto.toBase64(ctx.request.body["description"]),
+        description:ctx.request.body["description"],
         timestamp:new Date().getTime(),
         owner:ctx.params["uin"]
     };
@@ -173,8 +141,8 @@ router.get("/:uin/app/:app",async ctx=>{
         ctx.body = {
             result: 200,
             uin:res.uin,
-            name:Crypto.toString(res.name),
-            description:Crypto.toString(res.description),
+            name:res.name,
+            description:res.description,
             timestamp:res.timestamp,
             owner:res.owner
         };
@@ -188,9 +156,9 @@ router.put("/:uin/app/:app",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["description"]).string();
 
     const bean={
-        name:Crypto.toBase64(ctx.request.body["name"]),
+        name:ctx.request.body["name"],
         secret:ctx.request.body["secret"],
-        description:Crypto.toBase64(ctx.request.body["description"])
+        description:ctx.request.body["description"]
     };
 
     const res=await ctx.mongo.collection("p")
