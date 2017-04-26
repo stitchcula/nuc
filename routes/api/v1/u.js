@@ -103,9 +103,24 @@ router.get("/:uin",async ctx=>{
 });
 
 router.put("/:uin",body({ limit: '10kb'}),async ctx=>{
+    if(ctx.query["nickname"]||ctx.query["email"]){
+        if(ctx.query["nickname"]&&await ctx.mongo.collection("u")
+                .findOne({nickname:ctx.query["nickname"]}))
+            return ctx.body={result:595};
+        else if(ctx.query["email"]&&await ctx.mongo.collection("u")
+                .findOne({email:ctx.query["email"]}))
+            return ctx.body={result:595};
+        else
+            return ctx.body={result:404};
+    }
+
     vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["email"]).notnull().string();
     vld.chk(ctx.request.body["password"]).notnull().string();
+
+    if(await ctx.mongo.collection("u")
+            .findOne({"$or":[{email:ctx.query["email"]},{nickname:ctx.query["nickname"]}]}))
+        return ctx.body={result:595};
 
     const bean={
         nickname:ctx.request.body["nickname"],
