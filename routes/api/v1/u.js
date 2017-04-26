@@ -13,11 +13,15 @@ const router=new Router();
 
 router.use(userAuth);
 
-router.head(/.*/,async ctx=>{
+router.head("/",async ctx=>{
     if(ctx.state.type===TYPE_USER)
         return ctx.status = 204;
     else
         return ctx.status = 401;
+});
+
+router.get("/",async ctx=>{
+   return ctx.redirect(`/api/v1/u/${ctx.state.user.uin}`);
 });
 
 router.put("/",body({ limit: '10kb'}),async ctx=>{
