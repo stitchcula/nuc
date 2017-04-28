@@ -154,6 +154,8 @@ router.put("/:uin",body({ limit: '10kb'}),async ctx=>{
 router.del("/:uin",async ctx=>{
     const res=await ctx.mongo.collection("u")
         .deleteOne({uin:ctx.params["uin"]});
+    await ctx.mongo.collection("u_auth")
+        .deleteMany({user:ctx.params["uin"]});
     //todo: 删除user名下的所有app
 
     ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};

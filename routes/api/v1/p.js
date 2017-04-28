@@ -48,7 +48,7 @@ router.get("/:uin/role",async ctx=>{
         .project({_id:0})
         .skip(ctx.query["per"]*(ctx.query["page"]-1))
         .limit(ctx.query["per"])
-        .sort({timestamp:0})
+        .sort({timestamp:-1})
         .toArray();
 
     ctx.body={result:200,roles};
@@ -194,7 +194,7 @@ router.get("/:uin/user",async ctx=>{
             .project({_id:0,password:0})
             .skip(ctx.query["per"]*(ctx.query["page"]-1))
             .limit(ctx.query["per"])
-            .sort({timestamp:0})
+            .sort({timestamp:-1})
             .toArray();
         for(let i in users){
             users[i].role=await ctx.mongo.collection("u_auth")
@@ -210,7 +210,7 @@ router.get("/:uin/user",async ctx=>{
             .project({_id:0})
             .skip(ctx.query["per"]*(ctx.query["page"]-1))
             .limit(ctx.query["per"])
-            .sort({timestamp:0})
+            .sort({timestamp:-1})
             .toArray();
         for(let i in uins){
             const user=await ctx.mongo.collection("u")
@@ -225,7 +225,7 @@ router.get("/:uin/user",async ctx=>{
     ctx.body={result:200,users}
 });
 
-router.post("/:uin/user",async ctx=>{
+router.post("/:uin/user",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["email"]).notnull().string();
 
@@ -266,7 +266,7 @@ router.post("/:uin/user",async ctx=>{
     }
 
     await Mailer.to(bean.email)
-        .tpl(Mailer.TPL_NEW_USER)
+        .tpl("TPL_NEW_USER")
         .params(bean.nickname,password)
         .send();
 
