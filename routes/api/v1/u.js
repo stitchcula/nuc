@@ -38,10 +38,13 @@ router.put("/",body({ limit: '10kb'}),async ctx=>{
 
     const user=await ctx.mongo.collection("u")
         .findOne(bean,{_id:0,password:0});
-    if(!user)
+    if(!user){
+        ctx.status = 401 ;
         throw "账户或密码错误。";
+    }
 
     //非关键字段
+    user.LoginTime=user.LoginTime?user.LoginTime+1:1;
     user.LastLoginTime=new Date().getTime();
     user.LastLoginIp=ctx.ip;
     user.UniquenessCheck=Crypto.sha256(user.LastLoginTime+user.uin+"nicaiya");
@@ -60,6 +63,13 @@ router.post("/",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["nickname"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["email"]).notnull().string();
     vld.chk(ctx.request.body["password"]).notnull().string();
+
+    if(await ctx.mongo.collection("u")
+            .findOne({nickname:ctx.request.body["nickname"]}))
+        return ctx.body={result:595,key:'nickname'};
+    if(await ctx.mongo.collection("u")
+            .findOne({email:ctx.request.body["email"]}))
+        return ctx.body={result:595,key:'email'};
 
     const bean={
         uin:Crypto.createUin(),
