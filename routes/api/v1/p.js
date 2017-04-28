@@ -183,7 +183,7 @@ router.get("/:uin/user",async ctx=>{
 
     ctx.query["per"]=ctx.query["per"]||10;
     ctx.query["page"]=ctx.query["page"]||1;
-    ctx.query["by"]=ctx.query["by"]||"user";
+    ctx.query["by"]=ctx.query["by"]||"nickname";
     let users=[];
 
     if(ctx.query["by"]==="nickname"||ctx.query["by"]==="email"){
