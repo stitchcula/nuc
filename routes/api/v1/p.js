@@ -27,7 +27,7 @@ router.post("/:uin/role",body({ limit: '10kb'}),async ctx=>{
         timestamp:new Date().getTime()
     };
 
-    if(ctx.request.body["role"]==="guest")
+    if(ctx.request.body["role"]==="Guest")
         bean.uin="000000000000000000000000";
 
     await ctx.mongo.collection("m")
@@ -41,7 +41,7 @@ router.get("/:uin/role",async ctx=>{
     ctx.query["page"]=ctx.query["page"]||1;
 
     let bean={owner:ctx.params["uin"]};
-    bean.role={"$regex":ctx.query["key"],"$options": 'i'};
+    bean.role={"$regex":ctx.query["kw"],"$options": 'i'};
 
     const roles = await ctx.mongo.collection("m")
         .find(bean)
@@ -129,7 +129,7 @@ router.post("/:uin/role/:role/rule",body({ limit: '10kb'}),async ctx=>{
         uin:Crypto.createUin(),
         target:ctx.request.body["target"],
         method:ctx.request.body["method"],
-        weight:ctx.request.body["method"],
+        weight:ctx.request.body["weight"],
         access:ctx.request.body["access"],
         owner:ctx.params["role"],
         timestamp:new Date().getTime()
@@ -158,7 +158,7 @@ router.put("/:uin/role/:role/rule/:rule",body({ limit: '10kb'}),async ctx=>{
     const bean={
         target:ctx.request.body["target"],
         method:ctx.request.body["method"],
-        weight:ctx.request.body["method"],
+        weight:ctx.request.body["weight"],
         access:ctx.request.body["access"],
     };
 
@@ -181,17 +181,17 @@ router.get("/:uin/user",async ctx=>{
     if(ctx.params["uin"]!=="000000000000000000000000")
         throw "该接口无法提供服务";
 
-    ctx.query["per"]=ctx.query["per"]||10;
-    ctx.query["page"]=ctx.query["page"]||1;
+    ctx.query["per"]=ctx.query["per"]?parseInt(ctx.query["per"]):10;
+    ctx.query["page"]=ctx.query["page"]?parseInt(ctx.query["page"]):1;
     ctx.query["by"]=ctx.query["by"]||"nickname";
     let users=[];
 
     if(ctx.query["by"]==="nickname"||ctx.query["by"]==="email"){
         let bean={};
-        bean[ctx.query["by"]]={"$regex":ctx.query["key"],"$options": 'i'};
+        bean[ctx.query["by"]]={"$regex":ctx.query["kw"],"$options": 'i'};
         users = await ctx.mongo.collection("u")
             .find(bean)
-            .project({_id:0,password:0})
+            .project({_id:0,password:0,UniquenessCheck:0})
             .skip(ctx.query["per"]*(ctx.query["page"]-1))
             .limit(ctx.query["per"])
             .sort({timestamp:-1})
@@ -202,9 +202,9 @@ router.get("/:uin/user",async ctx=>{
         }
     }else if(ctx.query["by"]==="role"){
         let bean={owner:ctx.params["uin"]};
-        bean[ctx.query["by"]]={"$regex":ctx.query["key"],"$options": 'i'};
+        bean[ctx.query["by"]]={"$regex":ctx.query["kw"],"$options": 'i'};
         const role=await ctx.mongo.collection("m")
-            .findOne(bean);
+            .findOne(bean,{_id:0});
         const uins = await ctx.mongo.collection("u_auth")
             .find({role:role.uin,app:ctx.params["uin"]})
             .project({_id:0})
@@ -214,7 +214,7 @@ router.get("/:uin/user",async ctx=>{
             .toArray();
         for(let i in uins){
             const user=await ctx.mongo.collection("u")
-                .findOne({uin: uins[i]},{_id:0,password:0});
+                .findOne({uin: uins[i]},{_id:0,password:0,UniquenessCheck:0});
             user.role={role:role.uin};
             users.push(user)
         }
@@ -236,7 +236,7 @@ router.post("/:uin/user",body({ limit: '10kb'}),async ctx=>{
             .findOne({email:ctx.request.body["email"]}))
         return ctx.body={result:595,key:'email'};
 
-    const password = randomBytes(6).toString('hex');
+    const password = randomBytes(3).toString('hex');
 
     const bean={
         uin:Crypto.createUin(),
@@ -245,6 +245,11 @@ router.post("/:uin/user",body({ limit: '10kb'}),async ctx=>{
         password:Crypto.sha256(password),
         timestamp:new Date().getTime()
     };
+
+    await Mailer.to(bean.email)
+        .params(bean.nickname,password)
+        .tpl("TPL_NEW_USER")
+        .send();
 
     await ctx.mongo.collection("u")
         .insertOne(bean);
@@ -258,17 +263,12 @@ router.post("/:uin/user",body({ limit: '10kb'}),async ctx=>{
     await ctx.mongo.collection("u_auth")
         .insertOne(auth);
 
-    if(auth.app !== "000000000000000000000000"){
+    if(auth.app !== "000000000000000000000000") {
         auth.app = "000000000000000000000000";
         auth.role = "000000000000000000000000";
         await ctx.mongo.collection("u_auth")
             .insertOne(auth);
     }
-
-    await Mailer.to(bean.email)
-        .tpl("TPL_NEW_USER")
-        .params(bean.nickname,password)
-        .send();
 
     ctx.body={result:200,uin:bean.uin}
 });
