@@ -74,6 +74,9 @@ router.put("/:uin/role/:role",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["role"]).notnull().string().least(3).most(16);
     vld.chk(ctx.request.body["parent"]).string().least(24).most(24);
 
+    if(!ctx.request.body["parent"])
+        ctx.request.body["parent"]="_";
+
     const bean={
         role:ctx.request.body["role"],
         parent:ctx.request.body["parent"],
@@ -138,7 +141,7 @@ router.post("/:uin/role/:role/rule",body({ limit: '10kb'}),async ctx=>{
     await ctx.mongo.collection("m_rule")
         .insertOne(bean);
 
-    ctx.body={result:200}
+    ctx.body={result: 200, uin: bean.uin}
 });
 
 router.put("/:uin/role/:role/rule/:rule",body({ limit: '10kb'}),async ctx=>{
@@ -146,14 +149,6 @@ router.put("/:uin/role/:role/rule/:rule",body({ limit: '10kb'}),async ctx=>{
     vld.chk(ctx.request.body["method"]).notnull().string();
     vld.chk(ctx.request.body["weight"]).notnull().number().least(0).most(100);
     vld.chk(ctx.request.body["access"]).notnull().boolean();
-
-    if(await ctx.mongo.collection("m_rule")
-            .findOne({
-                owner:ctx.params["role"],
-                target:ctx.request.body["target"],
-                method:ctx.request.body["method"],
-            }))
-        throw "规则重复";
 
     const bean={
         target:ctx.request.body["target"],
