@@ -96,6 +96,24 @@ router.del("/:uin/role/:role",async ctx=>{
     ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
 });
 
+/*----- temp menu data Begin -----*/
+
+router.get("/:uin/role/:role/menu",async ctx=>{
+    //redirect /:uin/role
+});
+
+router.put("/:uin/role/:role/menu",body({ limit: '10kb'}),async ctx=>{
+    vld.chk(ctx.request.body["menu"]).notnull();
+
+    const res=await ctx.mongo.collection("m")
+        .updateOne({owner:ctx.params["uin"],uin:ctx.params["role"]},
+            {"$set":{menu:ctx.request.body["menu"]}},{upsert:true});
+
+    ctx.body={result:(res.result.n===1&&res.result.ok===1)?200:404};
+});
+
+/*----- temp menu data End -----*/
+
 router.get("/:uin/role/:role/rule",async ctx=>{
     const rules=[];
     let role=ctx.params["role"],tmp;

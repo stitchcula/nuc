@@ -21,7 +21,13 @@ router.head("/",async ctx=>{
 });
 
 router.get("/",async ctx=>{
-   return ctx.redirect(`/api/v1/u/${ctx.state.user.uin}`);
+    const user=ctx.state.user;
+    user.role=await ctx.mongo.collection("m")
+        .findOne({owner:ctx.state.role.app,uin:ctx.state.role.role},{_id:0});
+
+    delete user.UniquenessCheck;
+
+    ctx.body={result:200,data:user};
 });
 
 router.put("/",body({ limit: '10kb'}),async ctx=>{
@@ -107,6 +113,7 @@ router.get("/:uin",async ctx=>{
     const user=ctx.state.user;
     user.roles=await ctx.mongo.collection("u_auth")
         .find({user:user.uin}).project({_id:0,user:0}).toArray();
+
     delete user.UniquenessCheck;
 
     ctx.body={result:200,data:user};
